@@ -1,0 +1,957 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ÇARPIM ARENASI: PARA AVCILARI</title>
+    <style>
+        /* * ------------------------------------------------------------------
+         * UI/UX MOBILE REVISION - CSS VARIABLES & RESET
+         * ------------------------------------------------------------------
+         */
+        :root {
+            --bg-color: #F0F4F8;
+            --card-bg: #FFFFFF;
+            --text-dark: #2D3748;
+            --text-muted: #718096;
+            
+            --primary: #FF9F1C;   /* Action Orange */
+            --secondary: #4FD1C5; /* Soft Teal */
+            --danger: #EF476F;    /* Soft Red/Pink */
+            --success: #06D6A0;   /* Vibrant Green */
+            
+            --p1-color: #FF5D8F;  /* Büşra Pink */
+            --p2-color: #9B5DE5;  /* Kübra Purple */
+            
+            --radius-lg: 24px;
+            --radius-md: 16px;
+            --radius-sm: 12px;
+            
+            --shadow-soft: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --shadow-float: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        * {
+            box-sizing: border-box;
+            user-select: none; 
+            -webkit-user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-dark);
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* ------------------------------------------------------------------
+         * STICKY HEADER
+         * ------------------------------------------------------------------
+         */
+        header {
+            background: var(--card-bg);
+            padding: 10px 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: var(--shadow-soft);
+            z-index: 100;
+            height: 70px;
+            flex-shrink: 0;
+        }
+
+        .player-badge {
+            display: flex;
+            flex-direction: column;
+            width: 42%;
+        }
+
+        .pb-name {
+            font-weight: 800;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 2px;
+        }
+        
+        .pb-coins {
+            display: flex;
+            align-items: center;
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: #D69E2E; /* Gold darken */
+        }
+        
+        .pb-bar-bg {
+            background: #EDF2F7;
+            height: 6px;
+            border-radius: 3px;
+            width: 100%;
+            margin-top: 4px;
+            overflow: hidden;
+        }
+        
+        .pb-bar-fill { height: 100%; transition: width 0.3s ease; }
+        .p1-style .pb-name { color: var(--p1-color); }
+        .p1-style .pb-bar-fill { background: var(--p1-color); }
+        .p2-style .pb-name { color: var(--p2-color); }
+        .p2-style .pb-bar-fill { background: var(--p2-color); }
+
+        .mod-toggle-btn {
+            background: #E2E8F0; border: none; border-radius: 50%; width: 40px; height: 40px;
+            font-size: 1.2rem; cursor: pointer; display: flex; align-items: center; justify-content: center;
+        }
+
+        /* ------------------------------------------------------------------
+         * LAYOUT & VIEWS
+         * ------------------------------------------------------------------
+         */
+        #app-content {
+            flex: 1; position: relative; overflow-y: auto; padding: 20px;
+            display: flex; flex-direction: column; align-items: center;
+        }
+
+        .screen {
+            width: 100%; max-width: 480px; display: none;
+            flex-direction: column; align-items: center; animation: fadeIn 0.3s ease;
+        }
+        .screen.active { display: flex; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* ------------------------------------------------------------------
+         * COMPONENTS
+         * ------------------------------------------------------------------
+         */
+        .btn {
+            border: none; padding: 16px 24px; font-size: 1.1rem; font-weight: 700;
+            border-radius: var(--radius-lg); cursor: pointer; width: 100%; margin-bottom: 12px;
+            transition: transform 0.1s; box-shadow: 0 4px 0 rgba(0,0,0,0.1);
+            display: flex; align-items: center; justify-content: center; gap: 10px;
+        }
+        .btn:active { transform: translateY(4px); box-shadow: none; }
+        .btn-primary { background-color: var(--primary); color: white; }
+        .btn-secondary { background-color: white; color: var(--text-dark); border: 2px solid #E2E8F0; }
+        .btn-danger { background-color: var(--danger); color: white; }
+        .btn-shop { background: linear-gradient(135deg, #FFD700 0%, #FDB931 100%); color: #5c4500; }
+
+        /* ------------------------------------------------------------------
+         * GAME VIEW
+         * ------------------------------------------------------------------
+         */
+        .turn-banner {
+            background: white; padding: 8px 16px; border-radius: 20px; font-weight: bold;
+            color: var(--text-muted); margin-bottom: 20px; box-shadow: var(--shadow-soft);
+            display: flex; align-items: center; gap: 8px; transition: all 0.3s ease;
+        }
+        .turn-dot { width: 12px; height: 12px; border-radius: 50%; }
+
+        .question-card {
+            background: white; border-radius: 30px; width: 100%; padding: 30px 20px;
+            text-align: center; box-shadow: var(--shadow-float); margin-bottom: 20px;
+            position: relative;
+        }
+        .anim-pop { animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .anim-shake { animation: shake 0.4s ease-in-out; }
+        @keyframes popIn { from { transform: scale(0.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-10px); } 75% { transform: translateX(10px); } }
+
+        .q-text { font-size: 3.5rem; font-weight: 800; color: var(--text-dark); margin: 0; line-height: 1.2; }
+        .q-sub { font-size: 0.9rem; color: var(--text-muted); margin-top: 5px; }
+
+        .timer-track {
+            width: 100%; height: 8px; background: #EDF2F7; border-radius: 4px; overflow: hidden; margin-top: 20px;
+        }
+        .timer-fill { height: 100%; background: var(--secondary); width: 100%; border-radius: 4px; }
+        .timer-steal { background: var(--danger) !important; }
+
+        .answer-display {
+            font-size: 2.5rem; height: 60px; margin-bottom: 20px; color: var(--primary);
+            font-weight: bold; display: flex; justify-content: center; align-items: center; letter-spacing: 5px;
+        }
+        .answer-placeholder { color: #CBD5E0; }
+
+        /* Buzzer Area */
+        #buzzer-area { display: flex; gap: 15px; width: 100%; height: 250px; }
+        .buzzer-btn {
+            flex: 1; border: none; border-radius: 24px; font-size: 1.8rem; font-weight: 900; color: white;
+            box-shadow: 0 10px 0 rgba(0,0,0,0.2); cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center;
+            transition: all 0.2s;
+        }
+        .buzzer-btn:active { transform: translateY(10px); box-shadow: none; }
+        .buzzer-btn.p1 { background-color: var(--p1-color); }
+        .buzzer-btn.p2 { background-color: var(--p2-color); }
+        .buzzer-btn.locked { 
+            background-color: #CBD5E0; color: #718096; box-shadow: none; transform: translateY(10px); pointer-events: none; opacity: 0.5;
+        }
+        .buzzer-btn.winner { box-shadow: 0 0 20px gold; transform: scale(1.05); z-index: 10; }
+
+        .keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; width: 100%; max-width: 400px; }
+        .key-btn {
+            background: white; border: none; border-radius: 16px; height: 60px; font-size: 1.8rem; font-weight: 600;
+            color: var(--text-dark); box-shadow: 0 4px 0 #E2E8F0; cursor: pointer;
+        }
+        .key-btn:active { transform: translateY(4px); box-shadow: none; background: #F7FAFC; }
+        .key-del { background: #FED7D7; color: #C53030; box-shadow: 0 4px 0 #FEB2B2; }
+        .key-enter { background: var(--success); color: white; grid-column: span 3; box-shadow: 0 4px 0 #049f76; }
+
+        .hidden { display: none !important; }
+
+        /* ------------------------------------------------------------------
+         * MODERATOR DRAWER
+         * ------------------------------------------------------------------
+         */
+        .drawer-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 900;
+            opacity: 0; pointer-events: none; transition: opacity 0.3s;
+        }
+        .drawer-overlay.open { opacity: 1; pointer-events: auto; }
+        .drawer {
+            position: fixed; bottom: 0; left: 0; width: 100%; background: white;
+            border-top-left-radius: 24px; border-top-right-radius: 24px; padding: 25px;
+            box-shadow: 0 -5px 20px rgba(0,0,0,0.2); z-index: 999;
+            transform: translateY(110%); transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+            max-height: 85vh; overflow-y: auto;
+        }
+        .drawer.open { transform: translateY(0); }
+        .toggle-row { display: flex; gap: 10px; flex-wrap: wrap; }
+        .toggle-btn {
+            flex: 1; padding: 10px; border: 1px solid #E2E8F0; background: white; border-radius: 8px; font-weight: 600; white-space: nowrap;
+        }
+        .toggle-btn.active { background: var(--text-dark); color: white; border-color: var(--text-dark); }
+        .control-group { margin-bottom: 20px; }
+
+        /* ------------------------------------------------------------------
+         * FEEDBACK & MODALS
+         * ------------------------------------------------------------------
+         */
+        #feedback-overlay {
+            position: fixed; top:0; left:0; width:100%; height:100%; pointer-events: none; z-index: 2000;
+            display: flex; justify-content: center; align-items: center;
+        }
+        .feedback-text { font-size: 4rem; font-weight: 900; text-shadow: 0 4px 10px rgba(0,0,0,0.3); opacity: 0; transform: scale(0); }
+        .fb-correct { color: var(--success); animation: fbPop 0.8s ease-out forwards; }
+        .fb-wrong { color: var(--danger); animation: fbPop 0.8s ease-out forwards; }
+        .fb-steal { color: var(--primary); font-size: 3rem !important; animation: fbPop 0.8s ease-out forwards; text-align: center;}
+        .fb-info { color: #fff; background: rgba(0,0,0,0.8); padding: 20px; border-radius: 15px; font-size: 2rem !important; }
+        
+        @keyframes fbPop { 0% { opacity: 0; transform: scale(0.5); } 50% { opacity: 1; transform: scale(1.2); } 100% { opacity: 0; transform: scale(1.5); } }
+
+        #summary-modal {
+            position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.9); z-index: 2500;
+            display: none; justify-content: center; align-items: center;
+        }
+        .summary-card { background: white; width: 90%; max-width: 400px; border-radius: 24px; padding: 30px; text-align: center; }
+        .sum-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #eee; font-size: 0.9rem; }
+        #confetti-canvas { position: fixed; top:0; left:0; pointer-events: none; z-index:1500; }
+        
+        /* Shop Grid */
+        .shop-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .shop-card { background: white; padding: 15px; border-radius: 16px; text-align: center; box-shadow: var(--shadow-soft); }
+    </style>
+</head>
+<body>
+
+<canvas id="confetti-canvas"></canvas>
+<div id="feedback-overlay"></div>
+
+<!-- SUMMARY MODAL -->
+<div id="summary-modal">
+    <div class="summary-card">
+        <h2 style="color: var(--primary); margin-top:0;">🏁 MAÇ BİTTİ!</h2>
+        
+        <div style="margin-bottom: 20px;">
+            <h3 style="color: var(--p1-color); margin: 5px 0;">BÜŞRA</h3>
+            <div class="sum-row"><span>Toplam Puan:</span> <strong id="sum-p1-pts">0</strong></div>
+            <div class="sum-row"><span>Doğru Sayısı:</span> <strong id="sum-p1-correct">0</strong></div>
+            <div class="sum-row"><span>Çalınan:</span> <strong id="sum-p1-steals">0</strong></div>
+            <div class="sum-row" style="color: #D69E2E;"><span>Kazanılan Coin:</span> <strong id="sum-p1-coins">0</strong></div>
+        </div>
+
+        <div style="margin-bottom: 20px;">
+            <h3 style="color: var(--p2-color); margin: 5px 0;">KÜBRA</h3>
+            <div class="sum-row"><span>Toplam Puan:</span> <strong id="sum-p2-pts">0</strong></div>
+            <div class="sum-row"><span>Doğru Sayısı:</span> <strong id="sum-p2-correct">0</strong></div>
+            <div class="sum-row"><span>Çalınan:</span> <strong id="sum-p2-steals">0</strong></div>
+            <div class="sum-row" style="color: #D69E2E;"><span>Kazanılan Coin:</span> <strong id="sum-p2-coins">0</strong></div>
+        </div>
+
+        <h3 id="sum-winner" style="font-size:1.4rem; margin: 15px 0;"></h3>
+
+        <button class="btn btn-primary" onclick="app.startGame()">🔄 Tekrar Oyna</button>
+        <button class="btn btn-secondary" onclick="app.closeSummary()">🏠 Ana Menü</button>
+    </div>
+</div>
+
+<!-- STICKY HEADER -->
+<header>
+    <div class="player-badge p1-style">
+        <div class="pb-name">BÜŞRA</div>
+        <div class="pb-coins"><span>🪙</span> <span id="h-p1-coins">0</span></div>
+        <div class="pb-bar-bg"><div class="pb-bar-fill" id="h-p1-bar" style="width: 0%"></div></div>
+    </div>
+    <button class="mod-toggle-btn" onclick="app.toggleDrawer()">👩‍⚖️</button>
+    <div class="player-badge p2-style" style="align-items: flex-end; text-align: right;">
+        <div class="pb-name">KÜBRA</div>
+        <div class="pb-coins"><span id="h-p2-coins">0</span> <span>🪙</span></div>
+        <div class="pb-bar-bg"><div class="pb-bar-fill" id="h-p2-bar" style="width: 0%"></div></div>
+    </div>
+</header>
+
+<!-- APP CONTENT -->
+<div id="app-content">
+    
+    <!-- 1. HOME SCREEN -->
+    <div id="view-home" class="screen active">
+        <div style="text-align: center; margin: 30px 0;">
+            <div style="font-size: 4rem; margin-bottom: 10px;">🧠</div>
+            <h1 style="margin: 0; font-size: 2rem; color: var(--primary); line-height: 1.1;">ÇARPIM<br>ARENASI</h1>
+            <p style="color: var(--text-muted);">Para Avcıları</p>
+        </div>
+        <div style="background: #e6fffa; color: #234e52; padding: 10px; border-radius: 10px; margin-bottom: 20px; text-align: center; font-size: 0.9rem;">
+            Seçili Mod: <strong id="home-mode-display">Arena (Buzzer)</strong>
+        </div>
+        <button class="btn btn-primary" style="height: 80px; font-size: 1.5rem;" onclick="app.startGame()"><span>🎮</span> OYNA</button>
+        <div style="display: flex; gap: 10px; width: 100%;">
+            <button class="btn btn-shop" style="flex: 1;" onclick="app.showView('view-shop')"><span>🎁</span> Market</button>
+            <button class="btn btn-secondary" style="flex: 1;" onclick="app.showView('view-leaderboard')"><span>🏆</span> Lider</button>
+        </div>
+    </div>
+
+    <!-- 2. GAME SCREEN -->
+    <div id="view-game" class="screen">
+        <div style="width: 100%; display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <button class="btn btn-secondary" style="width: auto; padding: 8px 16px; font-size: 0.9rem; margin:0;" onclick="app.endGame()">Bitir</button>
+            <div id="streak-badge" style="background: var(--primary); color: white; padding: 5px 12px; border-radius: 12px; font-weight: bold; opacity: 0; transition: opacity 0.3s;">🔥 Seri x2</div>
+        </div>
+
+        <div class="turn-banner" id="turn-banner">
+            <div class="turn-dot" id="turn-dot" style="background: var(--p1-color);"></div>
+            <span id="turn-text">Hazır...</span>
+        </div>
+
+        <!-- Question Card -->
+        <div id="q-card" class="question-card anim-pop">
+            <div class="q-text" id="q-display">? x ?</div>
+            <div class="q-sub" id="q-mode-label">Mod</div>
+            <div class="timer-track">
+                <div class="timer-fill" id="timer-bar"></div>
+            </div>
+        </div>
+
+        <div class="answer-display" id="input-display">
+            <span class="answer-placeholder">_</span>
+        </div>
+
+        <!-- BUZZER AREA (Hidden by default) -->
+        <div id="buzzer-area" class="hidden">
+            <button id="buzz-p1" class="buzzer-btn p1" onclick="app.handleBuzz('p1')">BÜŞRA<br>BAS!</button>
+            <button id="buzz-p2" class="buzzer-btn p2" onclick="app.handleBuzz('p2')">KÜBRA<br>BAS!</button>
+        </div>
+
+        <!-- KEYPAD AREA -->
+        <div id="keypad-area" class="keypad">
+            <button class="key-btn" onclick="app.keyPress(1)">1</button>
+            <button class="key-btn" onclick="app.keyPress(2)">2</button>
+            <button class="key-btn" onclick="app.keyPress(3)">3</button>
+            <button class="key-btn" onclick="app.keyPress(4)">4</button>
+            <button class="key-btn" onclick="app.keyPress(5)">5</button>
+            <button class="key-btn" onclick="app.keyPress(6)">6</button>
+            <button class="key-btn" onclick="app.keyPress(7)">7</button>
+            <button class="key-btn" onclick="app.keyPress(8)">8</button>
+            <button class="key-btn" onclick="app.keyPress(9)">9</button>
+            <button class="key-btn key-del" onclick="app.keyPress('del')">⌫</button>
+            <button class="key-btn" onclick="app.keyPress(0)">0</button>
+            <button class="key-btn key-enter" onclick="app.submitAnswer()">GÖNDER</button>
+        </div>
+    </div>
+
+    <!-- 3. SHOP SCREEN -->
+    <div id="view-shop" class="screen">
+        <button class="btn btn-secondary" style="margin-bottom: 20px;" onclick="app.showView('view-home')">◀ Geri Dön</button>
+        <h2 style="margin-top:0;">Ödül Dükkanı</h2>
+        <div class="shop-grid" id="shop-container"></div>
+    </div>
+
+    <!-- 4. LEADERBOARD SCREEN -->
+    <div id="view-leaderboard" class="screen">
+        <button class="btn btn-secondary" style="margin-bottom: 20px;" onclick="app.showView('view-home')">◀ Geri Dön</button>
+        <h2>Haftalık Puan</h2>
+        <div class="shop-card" style="width: 100%; margin-bottom: 15px; border-left: 5px solid var(--p1-color);">
+            <h3>BÜŞRA</h3>
+            <div style="font-size: 2.5rem; font-weight: 800; color: var(--text-dark);" id="lb-p1-pts">0</div>
+        </div>
+        <div class="shop-card" style="width: 100%; margin-bottom: 15px; border-left: 5px solid var(--p2-color);">
+            <h3>KÜBRA</h3>
+            <div style="font-size: 2.5rem; font-weight: 800; color: var(--text-dark);" id="lb-p2-pts">0</div>
+        </div>
+    </div>
+</div>
+
+<!-- MODERATOR DRAWER -->
+<div class="drawer-overlay" id="drawer-overlay" onclick="app.toggleDrawer()"></div>
+<div class="drawer" id="mod-drawer">
+    <div class="drawer-handle"></div>
+    <h3 style="margin-top:0;">👩‍⚖️ Abla Paneli</h3>
+    
+    <div class="control-group">
+        <span class="control-label">Oyun Modu</span>
+        <div class="toggle-row">
+            <button class="toggle-btn" id="m-warmup" onclick="app.setMode('warmup')">Isınma</button>
+            <button class="toggle-btn" id="m-arena" onclick="app.setMode('arena')">Arena</button>
+            <button class="toggle-btn" id="m-buzzer" onclick="app.setMode('buzzer')">Arena (Buzzer)</button>
+            <button class="toggle-btn" id="m-duel" onclick="app.setMode('duel')">Düello</button>
+        </div>
+    </div>
+
+    <!-- Arena Buzzer Settings -->
+    <div class="control-group">
+        <span class="control-label">Buzzer Ayarları (Steal)</span>
+        <div class="toggle-row">
+            <button class="toggle-btn active" id="steal-on" onclick="app.setSteal(true)">Çalma AÇIK</button>
+            <button class="toggle-btn" id="steal-off" onclick="app.setSteal(false)">Çalma KAPALI</button>
+        </div>
+    </div>
+
+    <div class="control-group">
+        <span class="control-label">Cevap Süresi</span>
+        <div class="toggle-row">
+            <button class="toggle-btn" id="t-5" onclick="app.setTimer(5)">5s</button>
+            <button class="toggle-btn active" id="t-10" onclick="app.setTimer(10)">10s</button>
+            <button class="toggle-btn" id="t-15" onclick="app.setTimer(15)">15s</button>
+        </div>
+    </div>
+
+    <div class="control-group">
+        <div style="display:flex; justify-content:space-between;">
+            <span class="control-label">Tablolar</span>
+            <span style="color:var(--secondary); font-size:0.8rem; font-weight:bold;" onclick="app.toggleMixed()">Karışık / Sıfırla</span>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px;" id="table-selector"></div>
+    </div>
+
+    <button class="btn btn-danger" onclick="app.resetDaily()">Günlük Limiti Sıfırla</button>
+</div>
+
+<script>
+    /* ========================================================
+    ÇARPIM ARENASI: PARA AVCILARI - OYUN MOTORU
+    ========================================================
+    */
+    const CONFIG = {
+        colors: ['#FF9F1C', '#2EC4B6', '#E71D36', '#FF5D8F', '#9B5DE5'],
+        shopItems: [
+            { id: 'icecream', name: 'Mini Dondurma', price: 45, icon: '🍦' },
+            { id: 'chips', name: 'Cips', price: 55, icon: '🍟' },
+            { id: 'choco', name: 'Çikolata Bar', price: 60, icon: '🍫' },
+            { id: 'juice', name: 'Meyve Suyu', price: 65, icon: '🧃' },
+            { id: 'screen', name: '+15dk Ekran', price: 80, icon: '📱' },
+            { id: 'toy', name: 'Sürpriz Oyuncak', price: 95, icon: '🧸' },
+            { id: 'custom', name: 'Özel İstek', price: 120, icon: '✨' }
+        ]
+    };
+
+    // ARENA BUZZER QUICK CONFIG: tables 2-3-4, timer 10s
+    const DEFAULT_DATA = {
+        p1: { name: "Büşra", coins: 0, daily: 0, points: 0, streak: 0 },
+        p2: { name: "Kübra", coins: 0, daily: 0, points: 0, streak: 0 },
+        settings: { mode: 'buzzer', timer: 10, tables: [2,3,4], stealEnabled: true },
+        lastDate: new Date().getDate()
+    };
+
+    const app = {
+        state: null,
+        runtime: { turn: 'p1', q: '', ans: 0, input: '', timerId: null },
+        
+        // =========================
+        // ARENA (BUZZER) MODE STATE
+        // =========================
+        buzzerState: {
+            active: false,
+            phase: 'waitingBuzz', // waitingBuzz, answering, stealBuzz, ended
+            questionIndex: 0,
+            maxQuestions: 15,
+            attemptCount: 0, 
+            firstAttemptPlayer: null,
+            deck: [], // New deck array
+            stats: { 
+                p1: { correct: 0, coins: 0, points: 0, steals: 0 },
+                p2: { correct: 0, coins: 0, points: 0, steals: 0 }
+            }
+        },
+
+        init: function() {
+            this.loadData();
+            this.renderUI();
+            this.renderShop();
+            this.renderTableSelector();
+        },
+
+        loadData: function() {
+            const raw = localStorage.getItem('carpimData_v2');
+            if (raw) {
+                this.state = JSON.parse(raw);
+                if (this.state.lastDate !== new Date().getDate()) {
+                    this.state.p1.daily = 0; this.state.p2.daily = 0;
+                    this.state.lastDate = new Date().getDate();
+                }
+            } else {
+                this.state = JSON.parse(JSON.stringify(DEFAULT_DATA));
+            }
+            this.save();
+        },
+
+        save: function() {
+            localStorage.setItem('carpimData_v2', JSON.stringify(this.state));
+            this.renderUI();
+        },
+
+        // VIEW & NAV
+        showView: function(id) {
+            document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+        },
+        toggleDrawer: function() {
+            document.getElementById('mod-drawer').classList.toggle('open');
+            document.getElementById('drawer-overlay').classList.toggle('open');
+        },
+
+        // GAME START LOGIC
+        startGame: function() {
+            if (this.state.settings.tables.length === 0) {
+                alert("Lütfen Abla Paneli'nden en az bir tablo seçin!");
+                return;
+            }
+
+            const mode = this.state.settings.mode;
+            this.closeSummary();
+            this.showView('view-game');
+            
+            // Clean UI
+            document.getElementById('buzzer-area').classList.add('hidden');
+            document.getElementById('keypad-area').classList.remove('hidden');
+            document.getElementById('input-display').classList.remove('hidden');
+            document.getElementById('streak-badge').style.opacity = 0;
+
+            if (mode === 'buzzer') {
+                this.startBuzzerMatch();
+            } else {
+                this.buzzerState.active = false;
+                this.nextTurn(); // Standard modes
+            }
+        },
+
+        // =========================
+        // ARENA (BUZZER) LOGIC
+        // =========================
+        startBuzzerMatch: function() {
+            this.buzzerState.active = true;
+            this.buzzerState.questionIndex = 0;
+            this.buzzerState.stats = { 
+                p1: { correct: 0, coins: 0, points: 0, steals: 0 },
+                p2: { correct: 0, coins: 0, points: 0, steals: 0 }
+            };
+            
+            // Generate Balanced Deck (5-5-5 logic if 3 tables selected)
+            this.generateBuzzerDeck();
+            
+            this.nextBuzzerQuestion();
+        },
+
+        generateBuzzerDeck: function() {
+            const tables = this.state.settings.tables;
+            const count = 15;
+            let deck = [];
+            
+            // Distribute questions evenly among selected tables
+            for(let i=0; i<count; i++) {
+                const t = tables[i % tables.length];
+                const m = Math.floor(Math.random() * 10) + 1;
+                deck.push({ t: t, m: m });
+            }
+            
+            // Fisher-Yates Shuffle
+            for (let i = deck.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [deck[i], deck[j]] = [deck[j], deck[i]];
+            }
+            
+            this.buzzerState.deck = deck;
+        },
+
+        nextBuzzerQuestion: function() {
+            this.buzzerState.questionIndex++;
+            if (this.buzzerState.questionIndex > this.buzzerState.maxQuestions) {
+                this.endBuzzerMatch();
+                return;
+            }
+
+            this.buzzerState.phase = 'waitingBuzz';
+            this.buzzerState.attemptCount = 0; 
+            this.buzzerState.firstAttemptPlayer = null;
+            
+            // UI Setup
+            document.getElementById('buzzer-area').classList.remove('hidden');
+            document.getElementById('keypad-area').classList.add('hidden');
+            document.getElementById('input-display').classList.add('hidden');
+            
+            ['p1', 'p2'].forEach(pid => {
+                const btn = document.getElementById('buzz-'+pid);
+                btn.classList.remove('locked', 'winner');
+                btn.disabled = false;
+            });
+
+            // Get Question from Deck
+            const qData = this.buzzerState.deck[this.buzzerState.questionIndex - 1];
+            if (qData) {
+                this.runtime.ans = qData.t * qData.m;
+                this.runtime.q = `${qData.t} x ${qData.m}`;
+                
+                // Update UI manually since we bypass generateQuestion
+                const card = document.getElementById('q-card');
+                card.classList.remove('anim-pop', 'anim-shake');
+                void card.offsetWidth; card.classList.add('anim-pop');
+                document.getElementById('q-display').innerText = this.runtime.q;
+            } else {
+                this.generateQuestion(); // Fallback
+            }
+            
+            // Labels
+            document.getElementById('turn-text').innerText = `SORU ${this.buzzerState.questionIndex} / 15`;
+            document.getElementById('turn-dot').style.background = '#ccc';
+            document.getElementById('q-mode-label').innerText = "Önce Basan Kazanır!";
+            document.getElementById('timer-bar').className = 'timer-fill';
+            document.getElementById('timer-bar').style.width = '100%';
+        },
+
+        handleBuzz: function(pid) {
+            if (this.buzzerState.phase !== 'waitingBuzz') return;
+
+            this.buzzerState.phase = 'answering';
+            this.buzzerState.attemptCount = 1;
+            this.buzzerState.firstAttemptPlayer = pid;
+            
+            this.runtime.turn = pid;
+            this.runtime.input = '';
+            this.updateInputDisplay();
+
+            const other = pid === 'p1' ? 'p2' : 'p1';
+            document.getElementById('buzz-'+pid).classList.add('winner');
+            document.getElementById('buzz-'+other).classList.add('locked');
+
+            setTimeout(() => {
+                document.getElementById('buzzer-area').classList.add('hidden');
+                document.getElementById('keypad-area').classList.remove('hidden');
+                document.getElementById('input-display').classList.remove('hidden');
+                
+                const name = this.state[pid].name;
+                const color = pid === 'p1' ? 'var(--p1-color)' : 'var(--p2-color)';
+                document.getElementById('turn-text').innerText = `Cevap Hakkı: ${name}`;
+                document.getElementById('turn-dot').style.background = color;
+                
+                this.startTimer(this.state.settings.timer);
+            }, 400);
+        },
+
+        handoffTurn: function() {
+             this.buzzerState.attemptCount++;
+             
+             if (this.buzzerState.attemptCount > 6) {
+                 this.showFeedback('info', `CEVAP: ${this.runtime.ans}`);
+                 setTimeout(() => this.nextBuzzerQuestion(), 1500);
+                 return;
+             }
+
+             this.runtime.turn = this.runtime.turn === 'p1' ? 'p2' : 'p1';
+             this.runtime.input = '';
+             this.updateInputDisplay();
+
+             const name = this.state[this.runtime.turn].name;
+             const color = this.runtime.turn === 'p1' ? 'var(--p1-color)' : 'var(--p2-color)';
+             
+             document.getElementById('turn-text').innerText = `HAK DEVRİ: ${name}`;
+             document.getElementById('turn-dot').style.background = color;
+             document.getElementById('q-mode-label').innerText = "Doğru = +1 Puan";
+             
+             document.getElementById('timer-bar').className = 'timer-fill timer-steal';
+             this.startTimer(this.state.settings.timer); 
+        },
+
+        handleBuzzerAnswer: function(isCorrect) {
+            clearInterval(this.runtime.timerId);
+            const pid = this.runtime.turn;
+
+            if (isCorrect) {
+                let pts = 0;
+                let coins = 0;
+                
+                if (this.buzzerState.attemptCount === 1) {
+                    pts = 2; coins = 3; 
+                    this.showFeedback('correct', `DOĞRU! +${pts} Puan`);
+                } else {
+                    pts = 1; coins = 1; 
+                    this.buzzerState.stats[pid].steals++;
+                    this.showFeedback('correct', `BİLDİN! +${pts} Puan`);
+                }
+
+                this.buzzerState.stats[pid].correct++;
+                this.buzzerState.stats[pid].points += pts;
+                this.buzzerState.stats[pid].coins += coins; 
+
+                this.fireConfetti();
+                setTimeout(() => this.nextBuzzerQuestion(), 1500);
+
+            } else {
+                this.showFeedback('wrong', 'YANLIŞ!');
+                const card = document.getElementById('q-card');
+                card.classList.remove('anim-pop');
+                void card.offsetWidth; card.classList.add('anim-shake');
+                setTimeout(() => this.handoffTurn(), 1000);
+            }
+        },
+
+        endBuzzerMatch: function() {
+            const s = this.buzzerState.stats;
+            this.commitCoins('p1', s.p1.coins);
+            this.commitCoins('p2', s.p2.coins);
+            this.state.p1.points += s.p1.points;
+            this.state.p2.points += s.p2.points;
+            this.save();
+
+            document.getElementById('sum-p1-pts').innerText = s.p1.points;
+            document.getElementById('sum-p1-correct').innerText = s.p1.correct;
+            document.getElementById('sum-p1-steals').innerText = s.p1.steals;
+            document.getElementById('sum-p1-coins').innerText = s.p1.coins;
+
+            document.getElementById('sum-p2-pts').innerText = s.p2.points;
+            document.getElementById('sum-p2-correct').innerText = s.p2.correct;
+            document.getElementById('sum-p2-steals').innerText = s.p2.steals;
+            document.getElementById('sum-p2-coins').innerText = s.p2.coins;
+
+            let winner = "";
+            if (s.p1.points > s.p2.points) winner = "🏆 KAZANAN: BÜŞRA";
+            else if (s.p2.points > s.p1.points) winner = "🏆 KAZANAN: KÜBRA";
+            else winner = "🤝 BERABERE!";
+            document.getElementById('sum-winner').innerText = winner;
+
+            document.getElementById('summary-modal').style.display = 'flex';
+            this.fireConfetti();
+        },
+
+        commitCoins: function(pid, amount) {
+            const p = this.state[pid];
+            if (p.daily < 120) {
+                const gain = Math.min(amount, 120 - p.daily);
+                p.coins += gain;
+                p.daily += gain;
+            }
+        },
+
+        // =========================
+        // STANDARD LOGIC (ISINMA/ARENA/DUEL)
+        // =========================
+        nextTurn: function() {
+            this.runtime.turn = this.runtime.turn === 'p1' ? 'p2' : 'p1';
+            this.runtime.input = '';
+            this.updateInputDisplay();
+
+            const pid = this.runtime.turn;
+            const name = this.state[pid].name;
+            const color = pid === 'p1' ? 'var(--p1-color)' : 'var(--p2-color)';
+            
+            document.getElementById('turn-text').innerText = `${name} Sırası`;
+            document.getElementById('turn-dot').style.background = color;
+            document.getElementById('turn-text').style.color = color;
+            
+            this.generateQuestion();
+            
+            const modeName = { 'warmup': 'Isınma', 'arena': 'Arena (Standart)', 'duel': 'Düello' };
+            document.getElementById('q-mode-label').innerText = modeName[this.state.settings.mode] || 'Mod';
+            
+            this.startTimer(this.state.settings.timer);
+        },
+
+        generateQuestion: function() {
+            const t = this.state.settings.tables;
+            const table = t[Math.floor(Math.random() * t.length)];
+            const mult = Math.floor(Math.random() * 10) + 1;
+            this.runtime.ans = table * mult;
+            this.runtime.q = `${table} x ${mult}`;
+            
+            const card = document.getElementById('q-card');
+            card.classList.remove('anim-pop', 'anim-shake');
+            void card.offsetWidth; card.classList.add('anim-pop');
+            document.getElementById('q-display').innerText = this.runtime.q;
+        },
+
+        startTimer: function(sec) {
+            clearInterval(this.runtime.timerId);
+            const bar = document.getElementById('timer-bar');
+            bar.style.transition = 'none'; bar.style.width = '100%';
+            
+            setTimeout(() => {
+                bar.style.transition = `width ${sec}s linear`;
+                bar.style.width = '0%';
+            }, 50);
+
+            this.runtime.timerId = setTimeout(() => {
+                if (this.state.settings.mode === 'buzzer') {
+                    this.handleBuzzerAnswer(false);
+                } else {
+                    this.handleStandardResult(false);
+                }
+            }, sec * 1000);
+        },
+
+        keyPress: function(val) {
+            if (val === 'del') this.runtime.input = this.runtime.input.slice(0, -1);
+            else if (this.runtime.input.length < 3) this.runtime.input += val;
+            this.updateInputDisplay();
+        },
+        updateInputDisplay: function() {
+            const el = document.getElementById('input-display');
+            el.innerHTML = this.runtime.input.length === 0 ? '<span class="answer-placeholder">_</span>' : this.runtime.input;
+        },
+        submitAnswer: function() {
+            const val = parseInt(this.runtime.input);
+            if (isNaN(val)) return;
+            
+            if (this.state.settings.mode === 'buzzer') {
+                this.handleBuzzerAnswer(val === this.runtime.ans);
+            } else {
+                this.handleStandardResult(val === this.runtime.ans);
+            }
+        },
+
+        handleStandardResult: function(isCorrect) {
+            clearInterval(this.runtime.timerId);
+            const pid = this.runtime.turn;
+            const mode = this.state.settings.mode;
+
+            if (isCorrect) {
+                this.showFeedback('correct', 'DOĞRU!');
+                this.fireConfetti();
+                
+                let coins = (mode === 'warmup') ? 2 : 3; 
+                if (mode === 'duel') coins = 10;
+                
+                if(mode === 'arena') {
+                    this.state[pid].streak++;
+                    if(this.state[pid].streak % 3 === 0) coins += 5;
+                } else {
+                    this.state[pid].streak = 0;
+                }
+
+                this.commitCoins(pid, coins);
+                this.state[pid].points += (mode === 'arena' ? 2 : 1);
+                this.save();
+                
+                setTimeout(() => this.nextTurn(), 1000);
+            } else {
+                this.showFeedback('wrong', 'YANLIŞ!');
+                this.state[pid].streak = 0;
+                this.save();
+                setTimeout(() => this.nextTurn(), 1500);
+            }
+        },
+
+        endGame: function() {
+            clearInterval(this.runtime.timerId);
+            this.buzzerState.active = false;
+            this.showView('view-home');
+        },
+
+        closeSummary: function() {
+            document.getElementById('summary-modal').style.display = 'none';
+        },
+
+        renderUI: function() {
+            const p1 = this.state.p1; const p2 = this.state.p2;
+            document.getElementById('h-p1-coins').innerText = p1.coins;
+            document.getElementById('h-p2-coins').innerText = p2.coins;
+            document.getElementById('h-p1-bar').style.width = (p1.daily/120*100)+'%';
+            document.getElementById('h-p2-bar').style.width = (p2.daily/120*100)+'%';
+            
+            document.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById('m-'+this.state.settings.mode).classList.add('active');
+            document.getElementById('t-'+this.state.settings.timer).classList.add('active');
+            document.getElementById(this.state.settings.stealEnabled?'steal-on':'steal-off').classList.add('active');
+
+            const labels = { 'warmup': 'Isınma (Kolay)', 'arena': 'Arena (Standart)', 'duel': 'Düello', 'buzzer': 'Arena (Buzzer)' };
+            document.getElementById('home-mode-display').innerText = labels[this.state.settings.mode];
+        },
+
+        renderTableSelector: function() {
+            const con = document.getElementById('table-selector');
+            con.innerHTML = '';
+            for(let i=1; i<=10; i++){
+                const d = document.createElement('div');
+                d.className = 'tbl-cell '+(this.state.settings.tables.includes(i)?'selected':'');
+                d.innerText = i;
+                d.onclick = () => {
+                    const t = this.state.settings.tables;
+                    if(t.includes(i)){ if(t.length>1) this.state.settings.tables=t.filter(x=>x!==i); }
+                    else t.push(i);
+                    this.save(); this.renderTableSelector();
+                };
+                con.appendChild(d);
+            }
+        },
+
+        setMode: function(m) { this.state.settings.mode=m; this.save(); },
+        setTimer: function(t) { this.state.settings.timer=t; this.save(); },
+        setSteal: function(s) { this.state.settings.stealEnabled=s; this.save(); },
+        toggleMixed: function() {
+            this.state.settings.tables = (this.state.settings.tables.length===10) ? [2,3,4] : [1,2,3,4,5,6,7,8,9,10];
+            this.save(); this.renderTableSelector();
+        },
+        resetDaily: function() { this.state.p1.daily=0; this.state.p2.daily=0; this.save(); alert("Limitler sıfırlandı."); },
+
+        renderShop: function() {
+            const con = document.getElementById('shop-container'); con.innerHTML='';
+            CONFIG.shopItems.forEach(i => {
+                const d = document.createElement('div'); d.className='shop-card';
+                d.innerHTML = `<span style="font-size:2.5rem">${i.icon}</span><div style="font-weight:bold">${i.name}</div><div style="background:#FEFCBF;border-radius:5px;display:inline-block;padding:2px 6px;margin:5px 0;font-size:0.9rem">${i.price} 🪙</div><button class="btn btn-sm btn-shop" style="margin:0;padding:8px" onclick="app.buyItem('${i.id}')">Al</button>`;
+                con.appendChild(d);
+            });
+        },
+        buyItem: function(id) {
+            const item = CONFIG.shopItems.find(i=>i.id===id);
+            if(!confirm(`Kim alıyor?\nTamam: Büşra\nİptal: Kübra`)) this.processBuy('p2', item);
+            else this.processBuy('p1', item);
+        },
+        processBuy: function(pid, item) {
+            const p = this.state[pid];
+            if(p.coins < item.price) { alert("Yetersiz Coin!"); return; }
+            if(confirm(`ABLA ONAYI:\n${p.name} -> ${item.name} (${item.price})\nOnaylıyor musun?`)) {
+                p.coins -= item.price; this.save(); this.fireConfetti();
+            }
+        },
+        showFeedback: function(type, txt) {
+            const el = document.getElementById('feedback-overlay');
+            el.innerHTML = `<div class="feedback-text fb-${type}">${txt}</div>`;
+            setTimeout(() => el.innerHTML='', 1000);
+        },
+        fireConfetti: function() {
+            const c = document.getElementById('confetti-canvas'); const ctx = c.getContext('2d');
+            c.width = window.innerWidth; c.height = window.innerHeight;
+            let ps = []; for(let i=0;i<60;i++) ps.push({x:Math.random()*c.width, y:-20, c:CONFIG.colors[i%5], s:Math.random()*5+3});
+            let f=0; function draw(){
+                ctx.clearRect(0,0,c.width,c.height);
+                ps.forEach(p=>{ p.y+=p.s; ctx.fillStyle=p.c; ctx.beginPath(); ctx.arc(p.x,p.y,5,0,6.28); ctx.fill(); });
+                if(++f<100) requestAnimationFrame(draw); else ctx.clearRect(0,0,c.width,c.height);
+            }
+            draw();
+        }
+    };
+
+    window.onload = () => app.init();
+</script>
+</body>
+</html>
