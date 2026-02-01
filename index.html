@@ -750,12 +750,8 @@
         handoffTurn: function() {
              this.buzzerState.attemptCount++;
              
-             if (this.buzzerState.attemptCount > 6) {
-                 this.showFeedback('info', `CEVAP: ${this.runtime.ans}`);
-                 setTimeout(() => this.nextBuzzerQuestion(), 1500);
-                 return;
-             }
-
+             // REMOVED ATTEMPT LIMIT: Infinite retries until correct
+             
              this.runtime.turn = this.runtime.turn === 'p1' ? 'p2' : 'p1';
              this.runtime.input = '';
              this.updateInputDisplay();
@@ -946,7 +942,12 @@
                 this.showFeedback('wrong', 'YANLIŞ!');
                 this.state[pid].streak = 0;
                 this.save();
-                setTimeout(() => this.nextTurn(), 1500);
+                // REVISED: Retry indefinitely until correct
+                setTimeout(() => {
+                    this.runtime.input = '';
+                    this.updateInputDisplay();
+                    this.startTimer(this.state.settings.timer);
+                }, 1000);
             }
         },
 
